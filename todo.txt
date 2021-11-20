@@ -1,0 +1,20 @@
+
+
+Week 1:
+1) Minimal Unsat Core
+2) Example + Presentation
+
+
+Week 2:
+1) Flask backend
+2) React frontend
+
+
+Week 3:
+1) Glue frontend and backend together
+2) Work on project report
+
+Week 3.5:
+1) Wrap up project + report
+
+
