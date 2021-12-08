@@ -35,13 +35,13 @@ class App extends React.Component {
     super(props);
     this.state = {
       nodes: [
-        { data: { id: 'one', label: 'A', description: 'Universal health care' } },
-        { data: { id: 'two', label: 'B', description: 'Raise taxes' } },
-        { data: { id: 'three', label: 'C', description: 'M4A' } },
+        { data: { id: 'A', label: 'A', description: 'Universal health care' } },
+        { data: { id: 'B', label: 'B', description: 'Raise taxes' } },
+        { data: { id: 'C', label: 'C', description: 'M4A' } },
       ],
       links: [
-        { data: { source: 'one', target: 'two', label: 'Edge from Node1 to Node2' } },
-        { data: { source: 'one', target: 'three', label: 'Edge from Node1 to Node3' } }
+        { data: { source: 'A', target: 'B', label: 'Edge from Node1 to Node2' } },
+        { data: { source: 'A', target: 'C', label: 'Edge from Node1 to Node3' } }
       ],
       curLabel: "C",
       currentDesc: "",
@@ -49,6 +49,7 @@ class App extends React.Component {
     this.addChild = this.addChild.bind(this);
     this.resetGraph = this.resetGraph.bind(this);
     this.updateDesc = this.updateDesc.bind(this);
+    this.generateFormula = this.generateFormula.bind(this);
   }
 
   addChild(){
@@ -76,17 +77,38 @@ class App extends React.Component {
     })
   }
 
+  generateFormula(){
+    let implications = {}
+    // create mapping from ID to the consequences
+    for(const link of this.state.links) {
+      let source = link.data.source;
+      let target = link.data.target;
+      if(!(source in implications)) {
+        implications[source] = [];
+      }
+      implications[source].push(target);
+    }
+    // now create string
+    let formula = [];
+    for(const source in implications){
+      formula.push(`${source} → (${implications[source].join("&")})`);
+    }
+    formula = formula.join(" & ")
+    console.log(formula);
+    return formula;
+  }
+
   resetGraph(){
     // just a utility so i can undo editnig
     this.setState({
       nodes: [
-        { data: { id: 'one', label: 'A', description: 'Universal health care' } },
-        { data: { id: 'two', label: 'B', description: 'Raise taxes' } },
-        { data: { id: 'three', label: 'C', description: 'M4A' } },
+        { data: { id: 'A', label: 'A', description: 'Universal health care' } },
+        { data: { id: 'B', label: 'B', description: 'Raise taxes' } },
+        { data: { id: 'C', label: 'C', description: 'M4A' } },
       ],
       links: [
-        { data: { source: 'one', target: 'two', label: 'Edge from Node1 to Node2' } },
-        { data: { source: 'one', target: 'three', label: 'Edge from Node1 to Node3' } }
+        { data: { source: 'A', target: 'B', label: 'Edge from Node1 to Node2' } },
+        { data: { source: 'A', target: 'C', label: 'Edge from Node1 to Node3' } }
       ],
       curLabel: "C",
       currentDesc: ""
@@ -126,6 +148,7 @@ class App extends React.Component {
                 desc={this.state.currentDesc}
                 updateDesc={this.updateDesc}
               />
+              <button onClick={this.generateFormula}>Generate Formula</button>
             </Col>
           </Row>
         </Container>
