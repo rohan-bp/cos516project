@@ -1,5 +1,6 @@
 import logo from './logo.svg';
 import './App.css';
+import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import Cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import CytoscapeComponent from 'react-cytoscapejs';
@@ -7,6 +8,7 @@ import React from 'react';
 import {Row, Container, Col } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Editor from './Editor';
+import { firebase, db } from "./utils/firebase";
 
 Cytoscape.use(dagre);
 
@@ -33,34 +35,79 @@ function incrementLabel(labelStr){
 class App extends React.Component {
   constructor(props) {
     super(props);
+    // this.state = {
+    //   nodes: [
+    //     { data: { id: 'A', label: 'A', description: 'Universal health care' } },
+    //     { data: { id: 'B', label: 'B', description: 'Raise taxes' } },
+    //     { data: { id: 'C', label: 'C', description: 'M4A' } },
+    //   ],
+    //   links: [
+    //     { data: { source: 'A', target: 'B', label: 'Edge from Node1 to Node2' } },
+    //     { data: { source: 'A', target: 'C', label: 'Edge from Node1 to Node3' } }
+    //   ],
+    //   curLabel: "C",
+    //   currentDesc: "",
+    // }
     this.state = {
-      nodes: [
-        { data: { id: 'A', label: 'A', description: 'Universal health care' } },
-        { data: { id: 'B', label: 'B', description: 'Raise taxes' } },
-        { data: { id: 'C', label: 'C', description: 'M4A' } },
-      ],
-      links: [
-        { data: { source: 'A', target: 'B', label: 'Edge from Node1 to Node2' } },
-        { data: { source: 'A', target: 'C', label: 'Edge from Node1 to Node3' } }
-      ],
-      curLabel: "C",
-      currentDesc: "",
-    }
+      nodes: [],
+      links: [],
+      curLabel: "",
+      currentDesc: ""
+    };
     this.addChild = this.addChild.bind(this);
     this.resetGraph = this.resetGraph.bind(this);
     this.updateDesc = this.updateDesc.bind(this);
     this.generateFormula = this.generateFormula.bind(this);
   }
 
+  componentDidMount() {
+    const fetchData = async () => {
+      try {
+        let nodes = [];
+        let links = [];
+        let curIdx = -1;
+        let curLabel = "";
+        const db_nodes = await db.collection("props").get();
+        db_nodes.forEach((node) => {
+          const node_info = node.data();
+          console.log(node_info);
+          nodes.push({data: {id: node_info.label, label: node_info.label, description: node_info.description, index: node_info.index}});
+          if(node_info.index > curIdx) {
+            curIdx = node_info.index;
+            curLabel = node_info.label;
+          }
+        })
+
+        const db_links = await db.collection("links").get();
+        db_links.forEach((link) => {
+          const link_info = link.data();
+          links.push({data: {source: link_info.source, target: link_info.target}});
+        })
+
+        this.setState({
+          nodes: nodes,
+          links: links,
+          curLabel: curLabel,
+          currentDesc: ""
+        });
+      }
+      catch (error) {
+        console.log("error", error);
+      }
+    }
+    fetchData();
+  }
+
   addChild(){
     // find selected element
     let selected = this.cy.nodes(':selected');
+    const numNodes = this.state.nodes.length;
     if(selected.length > 0){
       let selectedNode = selected[0].data().id;
+      let newId = incrementLabel(this.state.curLabel);
+      let newNode = {data: {id: newId, label: newId, description: this.state.currentDesc}};
+      let newEdge = {data: {source: selectedNode, target: newId}};
       this.setState((state) => {
-        let newId = incrementLabel(state.curLabel);
-        let newNode = {data: {id: newId, label: newId, description: state.currentDesc}};
-        let newEdge = {data: {source: selectedNode, target: newId}};
         return {
           nodes: [...state.nodes, newNode],
           links: [...state.links, newEdge],
@@ -68,6 +115,38 @@ class App extends React.Component {
           currentDesc: ""
         }
       });
+
+      // add to firebase
+      const addProp = async () => {
+        try {
+          const prop = db.collection("props").doc();
+          await prop.set({
+            label: newId,
+            description: this.state.currentDesc,
+            index: numNodes
+          }, {
+            merge: true
+          })
+        } catch(error) {
+          console.log("error", error);
+        }
+      }
+      addProp();
+
+      const addLink = async () => {
+        try {
+          const prop = db.collection("links").doc();
+          await prop.set({
+            source: selectedNode,
+            target: newId
+          }, {
+            merge: true
+          })
+        } catch(error) {
+          console.log("error", error);
+        }
+      }
+      addLink();
     }
   }
 
@@ -115,10 +194,10 @@ class App extends React.Component {
     });
   }
 
-  componentDidMount() {
-    console.log("yay");
-    this.cy.resize();
-  }
+  // componentDidMount() {
+  //   // console.log("yay");
+  //   // this.cy.resize();
+  // }
 
   render() {
     const layout = { name: 'dagre', fit: true, padding: 90 };
@@ -126,31 +205,40 @@ class App extends React.Component {
     return (
       <div className="App">
         <Container fluid>
-          <Row>
-            <Col xs={8}>
-              <CytoscapeComponent
-                cy={(cy) => {
-                  cy.on('add', 'node', _evt => {
-                      cy.layout(layout).run()
-                  });
-                  this.cy = cy;
-                }}
-                elements={[...this.state.nodes, ...this.state.links]}
-                layout={layout}
-                style={style}
-              />
-            </Col>
-            <Col>
-              <Editor
-                addChild={this.addChild}
-                resetGraph={this.resetGraph}
-                nodes={this.state.nodes}
-                desc={this.state.currentDesc}
-                updateDesc={this.updateDesc}
-              />
-              <button onClick={this.generateFormula}>Generate Formula</button>
-            </Col>
-          </Row>
+        <BrowserRouter>
+          <Switch>
+            <Route path="/editor">
+              <Row>
+                <Col xs={8}>
+                  <CytoscapeComponent
+                    cy={(cy) => {
+                      cy.on('add', 'node', _evt => {
+                          cy.layout(layout).run()
+                      });
+                      this.cy = cy;
+                    }}
+                    elements={[...this.state.nodes, ...this.state.links]}
+                    layout={layout}
+                    style={style}
+                  />
+                </Col>
+                <Col>
+                  <Editor
+                    addChild={this.addChild}
+                    resetGraph={this.resetGraph}
+                    nodes={this.state.nodes}
+                    desc={this.state.currentDesc}
+                    updateDesc={this.updateDesc}
+                  />
+                  <button onClick={this.generateFormula}>Generate Formula</button>
+                </Col>
+              </Row>
+            </Route>
+            <Route path="/bing">
+              <h1>Bing</h1>
+            </Route>
+          </Switch>
+        </BrowserRouter>
         </Container>
       </div>
     );

@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Button, Container } from 'react-bootstrap';
 
 function Editor(props) {
-  const nodes = props.nodes.map((node) => <li key={node.id}>{node.data.label}: {node.data.description}</li>);
+  let sorted = [...props.nodes];
+  sorted.sort((first, second) => {
+    return first.data.index - second.data.index;
+  });
+  const nodes = sorted.map((node) => <li key={node.id}>{node.data.label}: {node.data.description}</li>);
+  console.log(sorted);
 
   return (
     <div>
