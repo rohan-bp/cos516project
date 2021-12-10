@@ -178,20 +178,61 @@ class App extends React.Component {
   }
 
   resetGraph(){
+    const wipe_db = async () => {
+      const db_nodes = await db.collection("props").get();
+      db_nodes.forEach((val) => {
+        db.collection("props").doc(val.id).delete();
+      });
+      const db_links = await db.collection("links").get();
+      db_links.forEach((val) => {
+        db.collection("links").doc(val.id).delete();
+      });
+
+      let nodes = [
+        { label: 'A', description: 'Universal health care', index: 0 },
+        { label: 'B', description: 'Raise taxes', index: 1 },
+        { label: 'C', description: 'Medicare for all', index: 2 },
+      ];
+
+      let links = [
+        { source: 'A', target: 'B' },
+        { source: 'A', target: 'C' }
+      ];
+
+      await nodes.forEach((node) => {
+        const prop = db.collection("props").doc();
+        prop.set({
+          label: node.label,
+          description: node.description,
+          index: node.index
+        }, {
+          merge: true
+        });
+      });
+
+      await links.forEach((link) => {
+        const prop = db.collection("links").doc();
+        prop.set({
+          source: link.source,
+          target: link.target
+        }, {
+          merge: true
+        });
+      });
+    }
+    wipe_db();
+
     // just a utility so i can undo editnig
-    this.setState({
-      nodes: [
-        { data: { id: 'A', label: 'A', description: 'Universal health care' } },
-        { data: { id: 'B', label: 'B', description: 'Raise taxes' } },
-        { data: { id: 'C', label: 'C', description: 'M4A' } },
-      ],
-      links: [
-        { data: { source: 'A', target: 'B', label: 'Edge from Node1 to Node2' } },
-        { data: { source: 'A', target: 'C', label: 'Edge from Node1 to Node3' } }
-      ],
-      curLabel: "C",
-      currentDesc: ""
-    });
+    // this.setState({
+    //   nodes: [
+    //     { data: { id: 'A', label: 'A', description: 'Universal health care' } },
+    //     { data: { id: 'B', label: 'B', description: 'Raise taxes' } },
+    //     { data: { id: 'C', label: 'C', description: 'M4A' } },
+    //   ],
+
+    //   curLabel: "C",
+    //   currentDesc: ""
+    // });
   }
 
   // componentDidMount() {
