@@ -8,7 +8,8 @@ import React from 'react';
 import {Row, Container, Col } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Editor from './Editor';
-import { firebase, db } from "./utils/firebase";
+import UserPref from './UserPref';
+import { db } from "./utils/firebase";
 
 Cytoscape.use(dagre);
 
@@ -25,8 +26,8 @@ function incrementLabel(labelStr){
       chars[curIndex] = String.fromCharCode(alphaCode);
     }
     curIndex -= 1;
-  } while(carry != 0 && curIndex >= 0);
-  if(carry != 0) {
+  } while(carry !== 0 && curIndex >= 0);
+  if(carry !== 0) {
     chars = ["A", ...chars]
   }
   return chars.join('');
@@ -35,19 +36,6 @@ function incrementLabel(labelStr){
 class App extends React.Component {
   constructor(props) {
     super(props);
-    // this.state = {
-    //   nodes: [
-    //     { data: { id: 'A', label: 'A', description: 'Universal health care' } },
-    //     { data: { id: 'B', label: 'B', description: 'Raise taxes' } },
-    //     { data: { id: 'C', label: 'C', description: 'M4A' } },
-    //   ],
-    //   links: [
-    //     { data: { source: 'A', target: 'B', label: 'Edge from Node1 to Node2' } },
-    //     { data: { source: 'A', target: 'C', label: 'Edge from Node1 to Node3' } }
-    //   ],
-    //   curLabel: "C",
-    //   currentDesc: "",
-    // }
     this.state = {
       nodes: [],
       links: [],
@@ -58,6 +46,8 @@ class App extends React.Component {
     this.resetGraph = this.resetGraph.bind(this);
     this.updateDesc = this.updateDesc.bind(this);
     this.generateFormula = this.generateFormula.bind(this);
+    this.updatePref = this.updatePref.bind(this);
+    this.submitPref = this.submitPref.bind(this);
   }
 
   componentDidMount() {
@@ -70,7 +60,6 @@ class App extends React.Component {
         const db_nodes = await db.collection("props").get();
         db_nodes.forEach((node) => {
           const node_info = node.data();
-          console.log(node_info);
           nodes.push({data: {id: node_info.label, label: node_info.label, description: node_info.description, index: node_info.index}});
           if(node_info.index > curIdx) {
             curIdx = node_info.index;
@@ -221,24 +210,14 @@ class App extends React.Component {
       });
     }
     wipe_db();
-
-    // just a utility so i can undo editnig
-    // this.setState({
-    //   nodes: [
-    //     { data: { id: 'A', label: 'A', description: 'Universal health care' } },
-    //     { data: { id: 'B', label: 'B', description: 'Raise taxes' } },
-    //     { data: { id: 'C', label: 'C', description: 'M4A' } },
-    //   ],
-
-    //   curLabel: "C",
-    //   currentDesc: ""
-    // });
   }
 
-  // componentDidMount() {
-  //   // console.log("yay");
-  //   // this.cy.resize();
-  // }
+  submitPref(){
+  }
+
+  updatePref(){
+  }
+
 
   render() {
     const layout = { name: 'dagre', fit: true, padding: 90 };
@@ -275,8 +254,8 @@ class App extends React.Component {
                 </Col>
               </Row>
             </Route>
-            <Route path="/bing">
-              <h1>Bing</h1>
+            <Route path="/pref">
+              <UserPref propList={this.state.nodes}/>
             </Route>
           </Switch>
         </BrowserRouter>

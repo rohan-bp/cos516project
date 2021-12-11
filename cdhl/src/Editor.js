@@ -7,7 +7,6 @@ function Editor(props) {
     return first.data.index - second.data.index;
   });
   const nodes = sorted.map((node) => <li key={node.id}>{node.data.label}: {node.data.description}</li>);
-  console.log(sorted);
 
   return (
     <div>
