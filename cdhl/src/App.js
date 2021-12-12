@@ -240,15 +240,24 @@ class App extends React.Component {
     for(const link of this.state.links) {
       let source = link.data.source;
       let target = link.data.target;
+      let color = link.data.color;
       if(!(source in implications)) {
-        implications[source] = [];
+        implications[source] = {};
       }
-      implications[source].push(target);
+      if(!(color in implications[source])) {
+        implications[source][color] = [];
+      }
+      implications[source][color].push(target);
     }
     // now create string
     let formula = [];
     for(const source in implications){
-      formula.push(`${source} → (${implications[source].join("&")})`);
+      let conjClauses = [];
+      for(const color in implications[source]) {
+        let joinSymbol = color === "gray" ? "&" : "|"; // accommodate or groups
+        conjClauses.push(`(${implications[source][color].join(joinSymbol)})`);
+      }
+      formula.push(`${source} >> (${conjClauses.join("&")})`);
     }
     formula = formula.join(" & ")
     console.log(formula);
@@ -266,36 +275,49 @@ class App extends React.Component {
         db.collection("links").doc(val.id).delete();
       });
 
-      let nodes = [
+      const nodes = [
         { label: 'A', description: 'Universal health care', index: 0 },
         { label: 'B', description: 'Raise taxes', index: 1 },
-        { label: 'C', description: 'Medicare for all', index: 2 },
+        { label: 'C', description: 'Divert spending', index: 2 },
+        { label: 'D', description: 'Incur debt', index: 3 },
+        { label: 'E', description: 'Medicare for all', index: 4 },
+        { label: 'F', description: 'Medicaid for all', index: 5 },
+        { label: 'G', description: 'Private insurance voucher system', index: 6 },
+        { label: 'H', description: 'Increased demand', index: 7 },
+        { label: 'I', description: 'Lower R&D funding', index: 8 },
+        { label: 'J', description: 'Improved outcomes', index: 9 },
+        { label: 'K', description: 'Corporate taxes', index: 10 },
+        { label: 'L', description: 'Taxes on the wealthy', index: 11 },
+        { label: 'M', description: 'Taxes on all households', index: 12 },
+        { label: 'N', description: 'Longer wait times', index: 13 },
       ];
 
-      let links = [
-        { source: 'A', target: 'B', color: 'gray' },
-        { source: 'A', target: 'C', color: 'gray'}
+      const links = [
+        { source: 'A', target: 'B', color: '#a846a0' },
+        { source: 'A', target: 'C', color: '#a846a0'},
+        { source: 'A', target: 'D', color: '#a846a0'},
+        { source: 'A', target: 'E', color: '#43B929'},
+        { source: 'A', target: 'F', color: '#43B929'},
+        { source: 'A', target: 'G', color: '#43B929'},
+        { source: 'A', target: 'H', color: 'gray'},
+        { source: 'A', target: 'I', color: 'gray'},
+        { source: 'A', target: 'J', color: 'gray'},
+        { source: 'B', target: 'K', color: '#dc851f'},
+        { source: 'B', target: 'L', color: '#dc851f'},
+        { source: 'B', target: 'M', color: '#dc851f'},
+        { source: 'H', target: 'N', color: 'gray'},
       ];
 
       await nodes.forEach((node) => {
         const prop = db.collection("props").doc();
-        node.dbId = prop.id;
-        prop.set({
-          label: node.label,
-          description: node.description,
-          index: node.index
-        }, {
+        prop.set(node, {
           merge: true
         });
       });
 
       await links.forEach((link) => {
         const prop = db.collection("links").doc();
-        link.dbId = prop.id;
-        prop.set({
-          source: link.source,
-          target: link.target
-        }, {
+        prop.set(link, {
           merge: true
         });
       });
