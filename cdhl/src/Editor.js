@@ -6,7 +6,7 @@ function Editor(props) {
   sorted.sort((first, second) => {
     return first.data.index - second.data.index;
   });
-  const nodes = sorted.map((node) => <li key={node.id}>{node.data.label}: {node.data.description}</li>);
+  const nodes = sorted.map((node) => <li key={node.data.id}>{node.data.label}: {node.data.description}</li>);
 
   return (
     <div>
@@ -18,6 +18,7 @@ function Editor(props) {
       <input value={props.desc} onChange={props.updateDesc}/>
       <Button onClick={props.addChild}>Add Child</Button>
       <Button onClick={props.resetGraph}>Reset Graph</Button>
+      <Button onClick={props.addOrGroup}>Or Group</Button>
     </div>
   )
 }

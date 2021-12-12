@@ -14,6 +14,8 @@ import { db } from "./utils/firebase";
 Cytoscape.use(dagre);
 
 function incrementLabel(labelStr){
+  // increments label string from
+  // "A" to "B" or "Z" to "AA"
   let chars = labelStr.split("");
   let curIndex = chars.length - 1;
   let carry = 0;
@@ -33,6 +35,11 @@ function incrementLabel(labelStr){
   return chars.join('');
 }
 
+
+function randomColor() {
+  return "#" + Math.floor(Math.random()*16777215).toString(16);
+}
+
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -46,8 +53,7 @@ class App extends React.Component {
     this.resetGraph = this.resetGraph.bind(this);
     this.updateDesc = this.updateDesc.bind(this);
     this.generateFormula = this.generateFormula.bind(this);
-    this.updatePref = this.updatePref.bind(this);
-    this.submitPref = this.submitPref.bind(this);
+    this.addOrGroup = this.addOrGroup.bind(this);
   }
 
   componentDidMount() {
@@ -60,7 +66,7 @@ class App extends React.Component {
         const db_nodes = await db.collection("props").get();
         db_nodes.forEach((node) => {
           const node_info = node.data();
-          nodes.push({data: {id: node_info.label, label: node_info.label, description: node_info.description, index: node_info.index}});
+          nodes.push({data: {id: node_info.label, label: node_info.label, description: node_info.description, index: node_info.index, dbId: node.id}});
           if(node_info.index > curIdx) {
             curIdx = node_info.index;
             curLabel = node_info.label;
@@ -70,7 +76,7 @@ class App extends React.Component {
         const db_links = await db.collection("links").get();
         db_links.forEach((link) => {
           const link_info = link.data();
-          links.push({data: {source: link_info.source, target: link_info.target}});
+          links.push({data: {source: link_info.source, target: link_info.target, color: link_info.color, dbId: link.id}});
         })
 
         this.setState({
@@ -91,11 +97,14 @@ class App extends React.Component {
     // find selected element
     let selected = this.cy.nodes(':selected');
     const numNodes = this.state.nodes.length;
+    const prop = db.collection("props").doc();
+    const link = db.collection("links").doc();
+
     if(selected.length > 0){
       let selectedNode = selected[0].data().id;
       let newId = incrementLabel(this.state.curLabel);
-      let newNode = {data: {id: newId, label: newId, description: this.state.currentDesc}};
-      let newEdge = {data: {source: selectedNode, target: newId}};
+      let newNode = {data: {id: newId, label: newId, description: this.state.currentDesc, dbId: prop.id}};
+      let newEdge = {data: {source: selectedNode, target: newId, color: "gray", dbId: link.id}};
       this.setState((state) => {
         return {
           nodes: [...state.nodes, newNode],
@@ -108,7 +117,6 @@ class App extends React.Component {
       // add to firebase
       const addProp = async () => {
         try {
-          const prop = db.collection("props").doc();
           await prop.set({
             label: newId,
             description: this.state.currentDesc,
@@ -124,10 +132,10 @@ class App extends React.Component {
 
       const addLink = async () => {
         try {
-          const prop = db.collection("links").doc();
-          await prop.set({
+          await link.set({
             source: selectedNode,
-            target: newId
+            target: newId,
+            color: "gray"
           }, {
             merge: true
           })
@@ -137,6 +145,46 @@ class App extends React.Component {
       }
       addLink();
     }
+  }
+
+  addOrGroup(){
+    const selected = this.cy.edges(':selected');
+    const groupColor = randomColor();
+    this.setState((state) => {
+      let linksCopy = [...state.links];
+      let idToIdx = {};
+      linksCopy.forEach((link, idx) => idToIdx[link.data.dbId] = idx);
+      // find selected links
+      selected.forEach(edge => {
+        const dbId = edge.data().dbId;
+        linksCopy[idToIdx[dbId]].data.color = groupColor;
+        edge.unselect();
+      })
+      return {
+        nodes: [...state.nodes],
+        links: linksCopy,
+        curLabel: state.curLabel,
+        currentDesc: state.currentDesc
+      }
+    });
+
+    // update firebase props
+    const updateColor = async (dbId) => {
+      try {
+        const prop = db.collection("links").doc(dbId);
+        await prop.set({
+          color: groupColor
+        }, {
+          merge: true
+        })
+      } catch(error) {
+        console.log("error", error);
+      }
+    }
+    selected.forEach(edge => {
+      const dbId = edge.data().dbId;
+      updateColor(dbId);
+    });
   }
 
   updateDesc(event){
@@ -184,8 +232,8 @@ class App extends React.Component {
       ];
 
       let links = [
-        { source: 'A', target: 'B' },
-        { source: 'A', target: 'C' }
+        { source: 'A', target: 'B', color: 'gray' },
+        { source: 'A', target: 'C', color: 'gray'}
       ];
 
       await nodes.forEach((node) => {
@@ -212,16 +260,41 @@ class App extends React.Component {
     wipe_db();
   }
 
-  submitPref(){
-  }
-
-  updatePref(){
-  }
-
-
   render() {
     const layout = { name: 'dagre', fit: true, padding: 90 };
     const style = {width:'100%', height: '100vh'};
+    const stylesheet= [
+      {
+        selector: "node",
+        style: {
+          label: "data(label)",
+          color: "black",
+          "text-outline-color": "white",
+          "text-outline-width": "2px",
+        }
+      },
+      {
+        selector: 'edge',
+        style: {
+          width: '3px',
+          'line-color': 'data(color)',
+        }
+      },
+      {
+        selector: 'edge:selected',
+        style: {
+          width: '3px',
+          'line-color': 'blue',
+        }
+      },
+      // {
+      //   selector: 'edge.or_group',
+      //   style: {
+      //     width: '4px',
+      //     'line-color': 'data(linecolor)'
+      //   }
+      // }
+    ];
     return (
       <div className="App">
         <Container fluid>
@@ -240,12 +313,14 @@ class App extends React.Component {
                     elements={[...this.state.nodes, ...this.state.links]}
                     layout={layout}
                     style={style}
+                    stylesheet={stylesheet}
                   />
                 </Col>
                 <Col>
                   <Editor
                     addChild={this.addChild}
                     resetGraph={this.resetGraph}
+                    addOrGroup={this.addOrGroup}
                     nodes={this.state.nodes}
                     desc={this.state.currentDesc}
                     updateDesc={this.updateDesc}
