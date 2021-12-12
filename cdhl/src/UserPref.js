@@ -10,7 +10,7 @@ function UserPref(props) {
   const [opposeIds, setOpposeIds] = useState([]);
 
 
-  const propsFull = (support.length + oppose.length) > 1;
+  const propsFull = (support.length + oppose.length) > 4;
   const atLeastOneProp = (support.length + oppose.length) > 0;
   const submitPrefs = async () => {
     try {
