@@ -20,6 +20,7 @@ function Editor(props) {
       <Button onClick={props.resetGraph}>Reset Graph</Button>
       <Button onClick={props.addOrGroup}>Or Group</Button>
       <Button onClick={props.removeOr}>Remove Or</Button>
+      <Button onClick={props.deleteNode}>Delete</Button>
     </div>
   )
 }

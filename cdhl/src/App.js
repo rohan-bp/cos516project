@@ -55,6 +55,7 @@ class App extends React.Component {
     this.generateFormula = this.generateFormula.bind(this);
     this.addOrGroup = this.addOrGroup.bind(this);
     this.removeOr = this.removeOr.bind(this);
+    this.deleteNode = this.deleteNode.bind(this);
   }
 
   componentDidMount() {
@@ -278,6 +279,7 @@ class App extends React.Component {
 
       await nodes.forEach((node) => {
         const prop = db.collection("props").doc();
+        node.dbId = prop.id;
         prop.set({
           label: node.label,
           description: node.description,
@@ -289,6 +291,7 @@ class App extends React.Component {
 
       await links.forEach((link) => {
         const prop = db.collection("links").doc();
+        link.dbId = prop.id;
         prop.set({
           source: link.source,
           target: link.target
@@ -298,6 +301,73 @@ class App extends React.Component {
       });
     }
     wipe_db();
+  }
+
+  deleteNode(){
+    let selected = this.cy.nodes(':selected');
+
+    if(selected.length === 1){
+      let selectedNode = selected[0].data().id;
+      let idChildren = {};
+      let incomingLinks = {};
+      let idToDbId = {};
+      for(const node of this.state.nodes) {
+        idToDbId[node.data.id] = node.data.dbId;
+      }
+      // make map of id to all child id by processing link structure
+      // also, map from node to all incoming links
+      for(const link of this.state.links) {
+        if(!(link.data.source in idChildren)){
+          idChildren[link.data.source] = [];
+        }
+        idChildren[link.data.source].push(link.data.target);
+
+        if(!(link.data.target in incomingLinks)){
+          incomingLinks[link.data.target] = [];
+        }
+        incomingLinks[link.data.target].push(link.data.dbId);
+      }
+
+      let nodesToDelete = new Set();
+      let linksToDelete = new Set();
+      let nodeQueue = [selectedNode];
+      while(nodeQueue.length > 0){ // BFS search
+        let toDelete = nodeQueue.shift();
+        nodesToDelete.add(idToDbId[toDelete]);
+        if(toDelete in incomingLinks) incomingLinks[toDelete].forEach((linkId) => linksToDelete.add(linkId));
+        if(toDelete in idChildren) idChildren[toDelete].forEach((nodeId) => nodeQueue.push(nodeId));
+      }
+
+      // delete from state
+      this.setState((state) => {
+        const nodesLeft = state.nodes.filter((node) => !(nodesToDelete.has(node.data.dbId)));
+        const linksLeft = state.links.filter((link) => !(linksToDelete.has(link.data.dbId)));
+        return {
+          nodes: nodesLeft,
+          links: linksLeft
+        };
+      });
+
+      // delete from firebase database
+      const propDB = db.collection("props");
+      const linkDB = db.collection("links");
+      const deleteNode = async (dbId) => {
+        try {
+          await propDB.doc(dbId).delete();
+        } catch(error) {
+          console.log("error", error);
+        }
+      }
+      const deleteLink = async (dbId) => {
+        try {
+          await linkDB.doc(dbId).delete();
+        } catch(error) {
+          console.log("error", error);
+        }
+      }
+      nodesToDelete.forEach((nodeDbId) => deleteNode(nodeDbId));
+      linksToDelete.forEach((linkDbId) => deleteLink(linkDbId));
+    }
   }
 
   render() {
@@ -327,13 +397,6 @@ class App extends React.Component {
           'line-color': 'blue',
         }
       },
-      // {
-      //   selector: 'edge.or_group',
-      //   style: {
-      //     width: '4px',
-      //     'line-color': 'data(linecolor)'
-      //   }
-      // }
     ];
     return (
       <div className="App">
@@ -362,6 +425,7 @@ class App extends React.Component {
                     resetGraph={this.resetGraph}
                     addOrGroup={this.addOrGroup}
                     removeOr={this.removeOr}
+                    deleteNode={this.deleteNode}
                     nodes={this.state.nodes}
                     desc={this.state.currentDesc}
                     updateDesc={this.updateDesc}
