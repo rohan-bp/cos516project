@@ -54,6 +54,7 @@ class App extends React.Component {
     this.updateDesc = this.updateDesc.bind(this);
     this.generateFormula = this.generateFormula.bind(this);
     this.addOrGroup = this.addOrGroup.bind(this);
+    this.removeOr = this.removeOr.bind(this);
   }
 
   componentDidMount() {
@@ -174,6 +175,45 @@ class App extends React.Component {
         const prop = db.collection("links").doc(dbId);
         await prop.set({
           color: groupColor
+        }, {
+          merge: true
+        })
+      } catch(error) {
+        console.log("error", error);
+      }
+    }
+    selected.forEach(edge => {
+      const dbId = edge.data().dbId;
+      updateColor(dbId);
+    });
+  }
+
+  removeOr(){
+    const selected = this.cy.edges(':selected');
+    this.setState((state) => {
+      let linksCopy = [...state.links];
+      let idToIdx = {};
+      linksCopy.forEach((link, idx) => idToIdx[link.data.dbId] = idx);
+      // find selected links
+      selected.forEach(edge => {
+        const dbId = edge.data().dbId;
+        linksCopy[idToIdx[dbId]].data.color = "gray";
+        edge.unselect();
+      })
+      return {
+        nodes: [...state.nodes],
+        links: linksCopy,
+        curLabel: state.curLabel,
+        currentDesc: state.currentDesc
+      }
+    });
+
+    // update firebase props
+    const updateColor = async (dbId) => {
+      try {
+        const prop = db.collection("links").doc(dbId);
+        await prop.set({
+          color: "gray"
         }, {
           merge: true
         })
@@ -321,6 +361,7 @@ class App extends React.Component {
                     addChild={this.addChild}
                     resetGraph={this.resetGraph}
                     addOrGroup={this.addOrGroup}
+                    removeOr={this.removeOr}
                     nodes={this.state.nodes}
                     desc={this.state.currentDesc}
                     updateDesc={this.updateDesc}

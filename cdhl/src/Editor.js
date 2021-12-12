@@ -19,6 +19,7 @@ function Editor(props) {
       <Button onClick={props.addChild}>Add Child</Button>
       <Button onClick={props.resetGraph}>Reset Graph</Button>
       <Button onClick={props.addOrGroup}>Or Group</Button>
+      <Button onClick={props.removeOr}>Remove Or</Button>
     </div>
   )
 }
