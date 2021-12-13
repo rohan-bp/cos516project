@@ -8,6 +8,7 @@ function UserPref(props) {
   const [supportIds, setSupportIds] = useState([]);
   const [oppose, setOppose] = useState([]);
   const [opposeIds, setOpposeIds] = useState([]);
+  const [name, setName] = useState("");
 
 
   const propsFull = (support.length + oppose.length) > 4;
@@ -18,6 +19,7 @@ function UserPref(props) {
       await pref.set({
         support: supportIds,
         oppose: opposeIds,
+        name: name,
       }, {
         merge: true
       });
@@ -40,7 +42,7 @@ function UserPref(props) {
             setSupportIds([...supportIds, node.data.id]);
             setSupport([...support, node]);
           }}>Support</Button>
-          <Button disabled={propsFull ? true : null} onClick={() => {
+          <Button disabled={propsFull ? true : null} className="mx-2" onClick={() => {
             setOpposeIds([...opposeIds, node.data.id]);
             setOppose([...oppose, node]);
           }}>Oppose</Button>
@@ -61,10 +63,13 @@ function UserPref(props) {
   );
 
   return (
-    <Container>
+    <Container className="mt-3">
       <Row>
         <Col xs={{ span: 8, offset: 2 }}>
-          <h3>Submit Preferences</h3>
+          <h3> Name </h3>
+          <p> Please submit your name (or other identifier). </p>
+          <input placeholder="Type your name" onChange={event => setName(event.target.value)}/>
+          <h3 className="mt-4">Submit Preferences</h3>
           <p>Pick up to five policy statements you feel strongly about.</p>
             { proplist }
           <Row>
@@ -77,7 +82,7 @@ function UserPref(props) {
               {opposeList}
             </Col>
           </Row>
-          <Button disabled={atLeastOneProp ? null : true} onClick={submitPrefs}>Submit prefs</Button>
+          <Button disabled={(atLeastOneProp && name.length > 0) ? null : true} onClick={submitPrefs}>Submit prefs</Button>
         </Col>
       </Row>
     </Container>
