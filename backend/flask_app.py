@@ -40,6 +40,7 @@ def convertToCNF(formulaStr, mapping):
         
         cnfFormula.append(currClause)
 
+    print(cnfFormula.clauses)
     return cnfFormula
 
 # Takes a JSON object and returns a mapping of propositional variables to integers

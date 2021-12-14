@@ -1,4 +1,7 @@
 import sys
+import time
+import random
+import matplotlib.pyplot as plt
 from itertools import product
 from pysat.formula import CNF
 from pysat.solvers import Glucose3
@@ -100,7 +103,49 @@ def findMinUnsatCore(formula):
     return minCore
     
 
+# Function to test the performance of our Unsat Core Approach
+# Keeps increasing the number of formulas and computes execution time
+# Used in the performance study in the report
+def performanceStudy():
+    
+    formula = CNF()
+    formula.append([5,-2])
+    formula.append([6,-2])
+    formula.append([2, 3, 4, -1])
+    
+    vars = list(range(-6,0)) + list(range(1,7))
+    
+    x = []
+    y = []
+    print(formula.clauses)
+    for i in range(7):
+        sel = random.sample(vars, 4)
+
+        formula.clauses.append(sel)
+        formula.append([-2])
+        formula.append([2])
+        
+        print("Users: ", i," No. of clauses:", len(formula.clauses))
+        
+        start_time = time.time()
+        findMinUnsatCore(formula)
+        end = time.time()
+        total_time = (end - start_time)
+        print("--- %s seconds ---" % total_time)
+        
+        x.append(len(formula.clauses))
+        y.append(total_time)
+        
+    plt.plot(x,y,color="forestgreen")
+    plt.xlabel("No. of Clauses")
+    plt.ylabel("Time in S")
+    plt.title("Performance Study: Runtime vs No. of Clauses")
+    plt.savefig("perfstudy.png",dpi=300)
+
 if __name__ == "__main__":
+    
+    performanceStudy()
+    quit()
     
     formula = None
     
