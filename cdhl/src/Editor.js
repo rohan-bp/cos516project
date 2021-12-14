@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Row, Col, Container } from 'react-bootstrap';
+import NodeDefs from './NodeDefs';
 
 function Editor(props) {
-  let sorted = [...props.nodes];
-  sorted.sort((first, second) => {
-    return first.data.index - second.data.index;
-  });
-  const nodes = sorted.map((node) => <li key={node.data.id}>{node.data.label}: {node.data.description}</li>);
-
   return (
     <Container style={{"overflow-y": "scroll", "height": "90vh"}}>
-      <h3 className="mt-3">Definitions</h3>
-      <ul> {nodes} </ul>
+      <NodeDefs nodes={props.nodes} />
 
       <h3>Create new node</h3>
       <p>Click the appropriate parent node, type the description, and then click "Add child."</p>

@@ -5,10 +5,11 @@ import Cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import CytoscapeComponent from 'react-cytoscapejs';
 import React from 'react';
-import {Row, Container, Col } from 'react-bootstrap';
+import {Row, Container, Col, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Editor from './Editor';
 import UserPref from './UserPref';
+import PrefList from './PrefList';
 import { db } from "./utils/firebase";
 
 Cytoscape.use(dagre);
@@ -236,10 +237,16 @@ class App extends React.Component {
 
   generateFormula(){
     let implications = {}
+    // we will find the root node using the two sets
+    let allNodes = new Set();
+    let hasParent = new Set();
     // create mapping from ID to the consequences
     for(const link of this.state.links) {
       let source = link.data.source;
       let target = link.data.target;
+      allNodes.add(source);
+      allNodes.add(target);
+      hasParent.add(target);
       let color = link.data.color;
       if(!(source in implications)) {
         implications[source] = {};
@@ -259,6 +266,8 @@ class App extends React.Component {
       }
       formula.push(`${source} >> (${conjClauses.join("&")})`);
     }
+    let root = Array.from(allNodes).filter(n => !hasParent.has(n))[0];
+    formula.push(root);
     formula = formula.join(" & ")
     console.log(formula);
     return formula;
@@ -425,7 +434,7 @@ class App extends React.Component {
         <Container fluid>
         <BrowserRouter>
           <Switch>
-            <Route path="/editor">
+            <Route path="/policy">
               <Row>
                 <Col xs={8}>
                   <CytoscapeComponent
@@ -441,19 +450,29 @@ class App extends React.Component {
                     stylesheet={stylesheet}
                   />
                 </Col>
-                <Col>
-                  <Editor
-                    addChild={this.addChild}
-                    resetGraph={this.resetGraph}
-                    addOrGroup={this.addOrGroup}
-                    removeOr={this.removeOr}
-                    deleteNode={this.deleteNode}
-                    nodes={this.state.nodes}
-                    desc={this.state.currentDesc}
-                    updateDesc={this.updateDesc}
-                  />
-                  <button onClick={this.generateFormula}>Generate Formula</button>
-                </Col>
+                <Route path="/policy/edit">
+                  <Col>
+                    <Editor
+                      addChild={this.addChild}
+                      resetGraph={this.resetGraph}
+                      addOrGroup={this.addOrGroup}
+                      removeOr={this.removeOr}
+                      deleteNode={this.deleteNode}
+                      nodes={this.state.nodes}
+                      desc={this.state.currentDesc}
+                      updateDesc={this.updateDesc}
+                    />
+                    <button onClick={this.generateFormula}>Generate Formula</button>
+                  </Col>
+                </Route>
+                <Route path="/policy/conflict">
+                  <Col>
+                    <PrefList
+                      generateFormula={this.generateFormula}
+                      nodes={this.state.nodes}
+                    />
+                  </Col>
+                </Route>
               </Row>
             </Route>
             <Route path="/pref">
