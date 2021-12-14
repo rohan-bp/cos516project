@@ -2,7 +2,7 @@
 
 There are two components to this work:
 
-<h2>Policy Graph Application</h2>
+<h2>The Policy Graph Application</h2>
 
 The first is a ReactJS based application that allows for editing policy graphs, updating user preferences, and viewing conflicts.
 The policy graph editor is accessed via *localhost:3000/policy/edit*.
