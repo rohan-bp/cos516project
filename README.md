@@ -1,8 +1,6 @@
-# cos516project
+# COS 516 Project: 🤖 Conflict-Directed 🤗 Human Learning
 
-🤖 Conflict-Directed 🤗 Human Learning
-
-There are two components to the project:
+There are two components to this work:
 
 <h2>Policy Graph Application</h2>
 
