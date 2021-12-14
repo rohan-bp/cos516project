@@ -1,11 +1,10 @@
-import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import Cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import CytoscapeComponent from 'react-cytoscapejs';
 import React from 'react';
-import {Row, Container, Col, Button } from 'react-bootstrap';
+import {Row, Container, Col } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Editor from './Editor';
 import UserPref from './UserPref';
